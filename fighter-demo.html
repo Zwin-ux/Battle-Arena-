@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fighter Loader Demo</title>
+  <style>
+    body { font-family: sans-serif; background: #222; color: #eee; margin: 0; padding: 0; }
+    .container { max-width: 900px; margin: 30px auto; background: #2d2d2d; padding: 2em; border-radius: 10px; box-shadow: 0 2px 16px #0008; }
+    h1 { text-align: center; }
+    button { margin: 5px; padding: 8px 14px; border-radius: 4px; border: none; background: #444; color: #fff; cursor: pointer; transition: background 0.2s; }
+    button:hover { background: #666; }
+    input, select { margin: 5px; padding: 6px; border-radius: 4px; border: 1px solid #444; background: #333; color: #fff; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+    th, td { padding: 8px; border: 1px solid #444; text-align: left; }
+    th { background: #333; }
+    tr:nth-child(even) { background: #292929; }
+    .log { background: #181818; color: #7fff7f; padding: 8px; margin-top: 10px; border-radius: 4px; font-size: 0.95em; }
+    .section { margin: 2em 0 1em 0; border-bottom: 1px solid #444; padding-bottom: 1em; }
+    .tag { background: #444; color: #fff; border-radius: 2px; padding: 2px 6px; margin-right: 4px; font-size: 0.9em; }
+    .error { color: #ff5555; }
+    .warning { color: #ffcc00; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Fighter Loader Demo</h1>
+    <div class="section">
+      <button id="loadBtn">Load Fighters</button>
+      <button id="createBtn">Create Fighter</button>
+      <button id="updateBtn">Update First Fighter</button>
+      <button id="deleteBtn">Delete First Fighter</button>
+      <button id="undoBtn">Undo</button>
+      <button id="redoBtn">Redo</button>
+      <button id="hotReloadBtn">Start Hot Reload</button>
+      <button id="stopHotReloadBtn">Stop Hot Reload</button>
+      <button id="integrityBtn">Run Integrity Checks</button>
+    </div>
+    <div class="section">
+      <label>Filter by Tag: <input id="tagInput" type="text" placeholder="e.g. boss"></label>
+      <button id="filterTagBtn">Filter</button>
+      <label>Sort by: 
+        <select id="sortSelect">
+          <option value="name">Name</option>
+          <option value="power">Power</option>
+        </select>
+      </label>
+      <button id="sortBtn">Sort</button>
+      <label>Locale: <input id="localeInput" type="text" placeholder="en"></label>
+    </div>
+    <div class="section">
+      <h2>Fighters</h2>
+      <table id="fightersTable">
+        <thead>
+          <tr>
+            <th>ID</th><th>Name</th><th>Tags</th><th>Stats</th><th>Power</th><th>Localized Name</th>
+          </tr>
+        </thead>
+        <tbody id="fightersBody"></tbody>
+      </table>
+    </div>
+    <div class="section">
+      <h2>Logs</h2>
+      <div id="log" class="log"></div>
+    </div>
+  </div>
+  <script type="module">
+    import * as FL from './data/FighterLoader.js';
+    let currentFighters = [];
+    let hotReloading = false;
+
+    function log(msg, type="") {
+      const logDiv = document.getElementById('log');
+      logDiv.innerHTML = `<span class="${type}">${msg}</span>`;
+    }
+    function renderFighters(fighters) {
+      const tbody = document.getElementById('fightersBody');
+      tbody.innerHTML = "";
+      const locale = document.getElementById('localeInput').value || 'en';
+      fighters.forEach(f => {
+        const computed = FL.getComputedFighter(f);
+        const tags = (f.tags||[]).map(t=>`<span class='tag'>${t}</span>`).join('');
+        tbody.innerHTML += `<tr><td>${f.id}</td><td>${f.name}</td><td>${tags}</td><td>${JSON.stringify(f.stats)}</td><td>${computed.totalPower}</td><td>${FL.getLocalizedFighterField(f, 'name', locale)}</td></tr>`;
+      });
+    }
+    async function loadFighters() {
+      const fighters = await FL.loadFighterData();
+      if (fighters) {
+        currentFighters = fighters;
+        renderFighters(fighters);
+        log('Loaded ' + fighters.length + ' fighters.');
+      } else {
+        log('Failed to load fighters.', 'error');
+      }
+    }
+    document.getElementById('loadBtn').onclick = loadFighters;
+    document.getElementById('createBtn').onclick = async () => {
+      const id = 'f' + Math.floor(Math.random()*100000);
+      const fighter = { id, name: 'Test'+id, stats: {hp:100,atk:10,def:5}, tags:['test'], i18n:{en:{name:'Test'+id}} };
+      await FL.createFighter(fighter);
+      log('Created fighter '+id);
+      loadFighters();
+    };
+    document.getElementById('updateBtn').onclick = async () => {
+      if (!currentFighters.length) return log('No fighters to update','warning');
+      const f = currentFighters[0];
+      await FL.updateFighter(f.id, { name: f.name + '_UPD' });
+      log('Updated fighter '+f.id);
+      loadFighters();
+    };
+    document.getElementById('deleteBtn').onclick = async () => {
+      if (!currentFighters.length) return log('No fighters to delete','warning');
+      const f = currentFighters[0];
+      await FL.deleteFighter(f.id);
+      log('Deleted fighter '+f.id);
+      loadFighters();
+    };
+    document.getElementById('undoBtn').onclick = () => {
+      if (FL.undoFighterChange()) {
+        renderFighters(FL.filterFighters(()=>true));
+        log('Undo successful');
+      } else log('Nothing to undo','warning');
+    };
+    document.getElementById('redoBtn').onclick = () => {
+      if (FL.redoFighterChange()) {
+        renderFighters(FL.filterFighters(()=>true));
+        log('Redo successful');
+      } else log('Nothing to redo','warning');
+    };
+    document.getElementById('hotReloadBtn').onclick = () => {
+      if (!hotReloading) {
+        FL.startHotReload(2000);
+        hotReloading = true;
+        log('Hot reload started');
+      }
+    };
+    document.getElementById('stopHotReloadBtn').onclick = () => {
+      FL.stopHotReload();
+      hotReloading = false;
+      log('Hot reload stopped');
+    };
+    document.getElementById('integrityBtn').onclick = () => {
+      const {warnings, errors} = FL.runIntegrityChecks();
+      log('Integrity checks:<br>'+errors.map(e=>'<span class="error">'+e+'</span>').join('<br>')+warnings.map(w=>'<span class="warning">'+w+'</span>').join('<br>'));
+    };
+    document.getElementById('filterTagBtn').onclick = () => {
+      const tag = document.getElementById('tagInput').value;
+      renderFighters(tag ? FL.getFightersByTag(tag) : FL.filterFighters(()=>true));
+      log('Filtered fighters by tag: '+tag);
+    };
+    document.getElementById('sortBtn').onclick = () => {
+      const sortKey = document.getElementById('sortSelect').value;
+      let sorted;
+      if (sortKey === 'name') {
+        sorted = FL.sortFighters((a,b)=>a.name.localeCompare(b.name));
+      } else {
+        sorted = FL.sortFighters((a,b)=>{
+          const ca = FL.getComputedFighter(a), cb = FL.getComputedFighter(b);
+          return cb.totalPower-ca.totalPower;
+        });
+      }
+      renderFighters(sorted);
+      log('Sorted fighters by '+sortKey);
+    };
+    // Listen for refresh events
+    FL.onFighterEvent('refresh', fighters => {
+      if (fighters) {
+        currentFighters = fighters;
+        renderFighters(fighters);
+        log('Cache refreshed ('+fighters.length+' fighters)');
+      }
+    });
+    // Initial load
+    loadFighters();
+  </script>
+</body>
+</html>

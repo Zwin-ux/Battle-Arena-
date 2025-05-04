@@ -1,0 +1,41 @@
+{
+    "Ghostblade": {
+        "name": "Ghostblade",
+        "archetype": "Assassin",
+        "weapon": "Katana",
+        "speed": 12.0,
+        "jumpForce": 14.5,
+        "comboWindow": 0.15,
+        "special": {
+            "name": "Phase Slash",
+            "cooldown": 4.0,
+            "frames": 18,
+            "hitboxPattern": "forward arc",
+            "onHitEffect": "teleportBehind"
+        },
+        "visuals": {
+            "trailColor": "#FF66CC",
+            "idlePose": "crouchedLean"
+        }
+    },
+    "Brawler": {
+        "name": "Brawler",
+        "archetype": "Grappler",
+        "weapon": "Fists",
+        "speed": 8.0,
+        "jumpForce": 10.0,
+        "comboWindow": 0.25,
+        "special": {
+            "name": "Power Slam",
+            "cooldown": 5.0,
+            "frames": 24,
+            "hitboxPattern": "grab",
+            "onHitEffect": "knockdown",
+            "armorFrames": 8
+        },
+        "visuals": {
+            "trailColor": "#FF9900",
+            "idlePose": "wideStance"
+        }
+    }
+}

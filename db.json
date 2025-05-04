@@ -1,0 +1,19 @@
+
+{
+  "fighters": [
+    {
+      "id": "f1",
+      "name": "Alpha",
+      "stats": { "hp": 100, "atk": 15, "def": 10 },
+      "tags": ["starter"],
+      "i18n": { "en": { "name": "Alpha" } }
+    },
+    {
+      "id": "f2",
+      "name": "Beta",
+      "stats": { "hp": 120, "atk": 18, "def": 12 },
+      "tags": ["boss"],
+      "i18n": { "en": { "name": "Beta" } }
+    }
+  ]
+}
