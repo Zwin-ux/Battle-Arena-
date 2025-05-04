@@ -82,7 +82,7 @@ cd backend
 npm start  # Start real backend server
 ```
 
-### Features
+### Features | Goals
 
 - Real-time fighter data synchronization
 - Authentication system
