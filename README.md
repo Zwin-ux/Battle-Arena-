@@ -35,7 +35,7 @@ StickClash/
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/stickclash.git
+git clone https://github.com/Zwin-ux/stickclash.git
 cd stickclash
 ```
 
